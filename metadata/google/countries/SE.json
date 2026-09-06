@@ -1,0 +1,1 @@
+{"data/SE":{"id":"data/SE","key":"SE","name":"SWEDEN","fmt":"%O%n%N%n%A%nSE-%Z %C","require":"ACZ","zip":"\\d{3} ?\\d{2}","zipex":"11455,12345,10500","posturl":"https://www.postnord.se/en/our-tools/search-postcode-and-address/","locality_name_type":"post_town","postprefix":"SE-"}}

@@ -3,7 +3,38 @@
   "version": "0.0.0",
   "private": true,
   "description": "Generated postal address metadata and Effect schemas.",
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./countries": {
+      "types": "./dist/generated/countries.d.ts",
+      "import": "./dist/generated/countries.js"
+    },
+    "./countries/*": {
+      "types": "./dist/generated/countries/*.d.ts",
+      "import": "./dist/generated/countries/*.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas.d.ts",
+      "import": "./dist/schemas.js"
+    },
+    "./schemas/*": {
+      "types": "./dist/generated/schemas/*.d.ts",
+      "import": "./dist/generated/schemas/*.js"
+    },
+    "./regions/*": {
+      "types": "./dist/generated/regions/*.d.ts",
+      "import": "./dist/generated/regions/*.js"
+    }
+  },
   "scripts": {
     "build": "vp pack",
     "check": "vp check",
@@ -13,7 +44,8 @@
     "lint": "vp lint",
     "prepare": "effect-tsgo patch --typescript --oxlint",
     "test": "vp test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev": "vp pack --filter library && pnpm --filter @addressfield/playground dev"
   },
   "devDependencies": {
     "@effect/platform-node": "4.0.0-rc.112",
@@ -28,6 +60,14 @@
     "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
     "vite-plus": "0.3.0",
     "vitest": "4.1.11"
+  },
+  "peerDependencies": {
+    "effect": "4.0.0-rc.112"
+  },
+  "peerDependenciesMeta": {
+    "effect": {
+      "optional": true
+    }
   },
   "devEngines": {
     "packageManager": {

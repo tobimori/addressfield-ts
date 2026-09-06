@@ -1,6 +1,9 @@
 import { recommended } from "@effect/tsgo/oxlint-presets";
 import { defineConfig } from "vite-plus";
 
+import { formatOptions } from "./tools/codegen/format-options.ts";
+import { header } from "./tools/codegen/notice.ts";
+
 const ignored = [
   ".docs/**",
   ".repos/**",
@@ -8,24 +11,47 @@ const ignored = [
   "node_modules/**",
   "dist/**",
   "dist-tools/**",
+  "playground/dist/**",
   "coverage/**",
   "tools/oxlint/anti-slop/**",
 ];
 
 export default defineConfig({
-  pack: {
-    entry: { addressfield: "tools/codegen/main.ts" },
-    outDir: "dist-tools",
-    platform: "node",
-    target: "node24",
-    format: "esm",
-    dts: false,
-    sourcemap: true,
-    deps: {
-      neverBundle: true,
-      onlyBundle: [],
+  pack: [
+    {
+      name: "library",
+      entry: [
+        "src/index.ts",
+        "src/schemas.ts",
+        "src/generated/countries.ts",
+        "src/generated/{countries,schemas,regions}/*.ts",
+      ],
+      root: "src",
+      outDir: "dist",
+      platform: "neutral",
+      target: "es2023",
+      format: "esm",
+      unbundle: true,
+      tsconfig: "tsconfig.lib.json",
+      dts: { generator: "tsgo" },
+      sourcemap: false,
+      banner: { js: header, dts: header },
+      outputOptions: { comments: { legal: false } },
+      copy: { from: "src/generated/NOTICE", to: "dist" },
+      deps: { neverBundle: true, onlyBundle: [] },
     },
-  },
+    {
+      name: "cli",
+      entry: { addressfield: "tools/codegen/main.ts" },
+      outDir: "dist-tools",
+      platform: "node",
+      target: "node24",
+      format: "esm",
+      dts: false,
+      sourcemap: true,
+      deps: { neverBundle: true, onlyBundle: [] },
+    },
+  ],
   lint: {
     ignorePatterns: ignored,
     extends: [recommended],
@@ -69,9 +95,10 @@ export default defineConfig({
     },
   },
   fmt: {
-    ignorePatterns: ignored,
+    ...formatOptions,
+    ignorePatterns: [...ignored, "metadata/**"],
   },
   test: {
-    include: ["src/**/*.test.ts", "tools/codegen/**/*.test.ts"],
+    include: ["src/**/*.test.ts"],
   },
 });
