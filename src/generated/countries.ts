@@ -769,7 +769,10 @@ const countryLoaders = {
 
   ZW: () => import("./countries/ZW.ts").then((module) => module.ZW),
 };
-const regionLoaders: Record<CountryCode, () => Promise<import("../address.ts").RegionData>> = {
+type RegionLoaders = {
+  [Code in CountryCode]: () => Promise<import("../address.ts").RegionData>;
+};
+const regionLoaders: RegionLoaders = {
   AC: () => import("./regions/AC.ts").then((module) => module.records),
 
   AD: () => import("./regions/AD.ts").then((module) => module.records),

@@ -73,7 +73,10 @@ const renderCatalog = (codes: ReadonlyArray<string>) => {
   return `export const countryCodes = ${serialize(codes)} as const;
 export type CountryCode = typeof countryCodes[number];
 const countryLoaders = { ${countries.join(",\n")} };
-const regionLoaders: Record<CountryCode, () => Promise<import("../address.ts").RegionData>> = { ${regions.join(",\n")} };
+type RegionLoaders = {
+  [Code in CountryCode]: () => Promise<import("../address.ts").RegionData>;
+};
+const regionLoaders: RegionLoaders = { ${regions.join(",\n")} };
 const schemaLoaders = { ${schemas.join(",\n")} };
 export const loadCountry = (code: CountryCode) => countryLoaders[code]();
 export const loadRegions = (code: CountryCode) => regionLoaders[code]();
