@@ -1,0 +1,12 @@
+packages:
+  - .
+
+allowBuilds:
+  msgpackr-extract: false
+
+overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.0
+
+peerDependencyRules:
+  allowedVersions:
+    vite: "*"

@@ -1,0 +1,8 @@
+.repos/
+.docs/
+.cache/
+node_modules/
+dist/
+dist-tools/
+coverage/
+*.tsbuildinfo
