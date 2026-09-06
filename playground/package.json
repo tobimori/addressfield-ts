@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vp dev --host 127.0.0.1",
     "build": "vp build",
+    "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
-    "vite-plus": "0.3.0"
+    "vite-plus": "0.3.0",
+    "wrangler": "4.129.0"
   }
 }

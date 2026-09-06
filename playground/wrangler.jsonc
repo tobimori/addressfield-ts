@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "addressfield-playground",
+  "compatibility_date": "2026-09-03",
+  "workers_dev": true,
+  "build": {
+    "command": "pnpm -w exec vp pack --filter library && pnpm build",
+  },
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+}

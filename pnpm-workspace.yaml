@@ -3,6 +3,8 @@ packages:
   - playground
 
 allowBuilds:
+  esbuild: true
+  workerd: true
   msgpackr-extract: false
 
 overrides:

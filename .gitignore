@@ -1,6 +1,7 @@
 .repos/
 .docs/
 .cache/
+.wrangler/
 node_modules/
 dist/
 dist-tools/
