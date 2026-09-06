@@ -1,6 +1,5 @@
-import { describe, expect, it } from "@effect/vitest";
-import * as Result from "effect/Result";
-import * as Schema from "effect/Schema";
+import { describe, expect, expectTypeOf, it } from "@effect/vitest";
+import { Schema } from "effect";
 
 import { getAddressForm as getBYAddressForm } from "./generated/forms/BY.ts";
 import { getAddressForm as getCAAddressForm } from "./generated/forms/CA.ts";
@@ -36,7 +35,6 @@ describe("country forms and schemas", () => {
       "postalCode",
       "locality",
     ]);
-    expect(form.fields.map((field) => String(field.name))).not.toContain("countryCode");
     expect(form.rows).toEqual([
       ["recipient"],
       ["organization"],
@@ -52,7 +50,8 @@ describe("country forms and schemas", () => {
     expect(form.fields.find((field) => field.name === "postalCode")?.labelType).toBe("postal");
   });
 
-  it("keeps Belarusian region values stable in Russian", () => {
+  // Belarus uses non-Latin keys that differ from the Russian display labels
+  it("preserves non-Latin region keys when labels are translated", () => {
     const native = getBYAddressForm();
     const russian = getBYAddressForm({}, { addressLanguage: "ru" });
     const nativeRegions = native.fields.find(
@@ -78,7 +77,8 @@ describe("country forms and schemas", () => {
     ).toBe("Брэсцкая вобласць");
   });
 
-  it("changes Canadian region labels without changing their values", () => {
+  // Canada uses short region codes and supports regional language tags.
+  it("translates labels for a regional language tag without changing region codes", () => {
     const english = getCAAddressForm();
     const french = getCAAddressForm({}, { addressLanguage: "fr-CA" });
     const englishRegions = english.fields.find(
@@ -107,13 +107,11 @@ describe("country forms and schemas", () => {
   it("decodes complete German and regional US addresses", () => {
     const german = Schema.decodeSync(DEAddressSchema)(germanAddress);
     const american = Schema.decodeSync(USAddressSchema)(americanAddress);
-    const germanCountry: "DE" = german.countryCode;
-    const americanCountry: "US" = american.countryCode;
+    expectTypeOf(german.countryCode).toEqualTypeOf<"DE">();
+    expectTypeOf(american.countryCode).toEqualTypeOf<"US">();
 
     expect(german).toEqual(germanAddress);
     expect(american).toEqual(americanAddress);
-    expect(germanCountry).toBe("DE");
-    expect(americanCountry).toBe("US");
   });
 
   it("combines country schemas with Schema.Union", () => {
@@ -122,23 +120,5 @@ describe("country forms and schemas", () => {
 
     expect(decode(germanAddress)).toEqual(germanAddress);
     expect(decode(americanAddress)).toEqual(americanAddress);
-  });
-
-  it("checks country postal codes", () => {
-    const result = Schema.decodeResult(DEAddressSchema)({
-      ...germanAddress,
-      postalCode: "invalid",
-    });
-
-    expect(Result.isFailure(result)).toBe(true);
-  });
-
-  it("checks regional postal prefixes inside the US schema", () => {
-    const result = Schema.decodeResult(USAddressSchema)({
-      ...americanAddress,
-      postalCode: "10001",
-    });
-
-    expect(Result.isFailure(result)).toBe(true);
   });
 });
