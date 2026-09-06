@@ -14,7 +14,7 @@ const ignored = [
 
 export default defineConfig({
   pack: {
-    entry: { codegen: "tools/codegen/main.ts" },
+    entry: { addressfield: "tools/codegen/main.ts" },
     outDir: "dist-tools",
     platform: "node",
     target: "node24",
@@ -72,6 +72,6 @@ export default defineConfig({
     ignorePatterns: ignored,
   },
   test: {
-    include: ["tests/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "tools/codegen/**/*.test.ts"],
   },
 });
