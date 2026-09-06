@@ -1,6 +1,6 @@
 {
   "name": "addressfield-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generated postal address metadata and Effect schemas.",
   "license": "MIT",
   "author": "Tobias Möritz",
