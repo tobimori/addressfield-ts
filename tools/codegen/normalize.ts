@@ -1,12 +1,23 @@
 import * as Effect from "effect/Effect";
 
-import type { AddressField } from "../../src/address.ts";
-import { fieldTokens } from "../../src/fields.ts";
+import type { AddressField, AddressFormField } from "../../src/address.ts";
 import { MetadataError } from "./metadata.ts";
 import type { loadSnapshot } from "./snapshot.ts";
 
 type Snapshot = Effect.Success<ReturnType<typeof loadSnapshot>>;
 type CountrySource = Snapshot["aggregates"][number];
+
+export const fieldTokens = [
+  ["R", "countryCode"],
+  ["N", "recipient"],
+  ["O", "organization"],
+  ["A", "addressLines"],
+  ["D", "dependentLocality"],
+  ["C", "locality"],
+  ["S", "administrativeArea"],
+  ["Z", "postalCode"],
+  ["X", "sortingCode"],
+] as const satisfies ReadonlyArray<readonly [string, AddressField]>;
 
 const fieldForToken = (token: string) => fieldTokens.find(([key]) => key === token)?.[1];
 
@@ -21,6 +32,31 @@ const readFields = Effect.fn(function* (tokens: string, source: string) {
   }
   return [...fields];
 });
+
+const layoutRows = (format: string, requiredFields: ReadonlyArray<AddressField>) => {
+  const seen = new Set<AddressFormField>();
+  const rows = format
+    .split("%n")
+    .map((line) => {
+      const row: AddressFormField[] = [];
+      for (const [, token] of line.matchAll(/%([A-Z])/gu)) {
+        const field = fieldForToken(token ?? "");
+        if (field !== undefined && field !== "countryCode" && !seen.has(field)) {
+          row.push(field);
+          seen.add(field);
+        }
+      }
+      return row;
+    })
+    .filter((row) => row.length > 0);
+  for (const field of requiredFields) {
+    if (field !== "countryCode" && !seen.has(field)) {
+      rows.push([field]);
+      seen.add(field);
+    }
+  }
+  return rows;
+};
 
 const checkPatterns = Effect.fn(function* (source: CountrySource) {
   for (const [id, record] of Object.entries(source.records)) {
@@ -53,8 +89,6 @@ export const normalizeCountry = Effect.fn(function* (
       ...(yield* readFields(record.require ?? defaults.require, record.id)),
     ]),
   ];
-  const uppercaseFields = yield* readFields(record.upper ?? defaults.upper ?? "", record.id);
-  const fields = new Set<AddressField>(["countryCode"]);
   const warnings = new Set<string>();
   for (const layout of [format, latinFormat]) {
     if (layout === undefined) continue;
@@ -63,14 +97,11 @@ export const normalizeCountry = Effect.fn(function* (
       const field = fieldForToken(token);
       if (field === undefined) {
         warnings.add(`${source.country}: unknown format token %${token}; layout preserved.`);
-      } else {
-        fields.add(field);
       }
     }
     if (layout.endsWith("%"))
       warnings.add(`${source.country}: incomplete format token; layout preserved.`);
   }
-  for (const field of requiredFields) fields.add(field);
   const postalCodePattern = (record.zip ?? defaults.zip) || undefined;
   // inherited postal patterns need validation too
   yield* checkPatterns({
@@ -80,14 +111,13 @@ export const normalizeCountry = Effect.fn(function* (
   return {
     metadata: {
       countryCode: source.country,
-      format,
-      latinFormat,
-      fields: [...fields],
+      rows: layoutRows(format, requiredFields),
+      latinRows: latinFormat === undefined ? undefined : layoutRows(latinFormat, requiredFields),
       requiredFields,
-      uppercaseFields,
       postalCodePattern,
+      postalCodeExamples: (record.zipex ?? defaults.zipex)?.split(",") ?? [],
       language: record.lang ?? defaults.lang,
-      languages: (record.languages ?? defaults.languages)?.split("~"),
+      languages: (record.languages ?? defaults.languages)?.split("~") ?? [],
       labels: {
         administrativeArea: record.state_name_type ?? defaults.state_name_type,
         postalCode: record.zip_name_type ?? defaults.zip_name_type,

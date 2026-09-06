@@ -1,4 +1,4 @@
-/** Shared address input. Generated country schemas enforce submission requirements. */
+/** A validated postal address. Country schemas enforce country-specific requirements. */
 export interface Address {
   readonly countryCode: string;
   readonly recipient?: string;
@@ -12,57 +12,35 @@ export interface Address {
 }
 
 export type AddressField = keyof Address;
-
-export const addressFields = [
-  "countryCode",
-  "recipient",
-  "organization",
-  "addressLines",
-  "dependentLocality",
-  "locality",
-  "administrativeArea",
-  "postalCode",
-  "sortingCode",
-] as const satisfies ReadonlyArray<AddressField>;
-
-export interface AddressIssue {
-  readonly field: AddressField;
-  readonly code: "required" | "country" | "postalCode" | "region" | "regionData";
-  readonly message: string;
-}
+export type AddressFormField = Exclude<AddressField, "countryCode">;
+export type AddressFormValues = Omit<Address, "countryCode">;
 
 export interface RegionRecord {
   readonly id: string;
-  readonly key?: string;
   readonly name?: string;
-  readonly lang?: string;
+  readonly lname?: string;
   readonly zip?: string;
   readonly sub_keys?: string;
   readonly sub_names?: string;
   readonly sub_lnames?: string;
   readonly sub_zips?: string;
+  readonly sub_isoids?: string;
 }
 
 export interface RegionData {
   readonly [id: string]: RegionRecord | undefined;
 }
 
-export interface AddressOptions {
-  readonly regions?: RegionData;
-  readonly language?: string;
-}
-
-/** Postal rules and form metadata, independent of a validation framework. */
+/** Postal rules and form metadata generated from one country record. */
 export interface CountryMetadata {
   readonly countryCode: string;
-  readonly format: string;
-  readonly latinFormat?: string;
-  readonly fields: ReadonlyArray<AddressField>;
+  readonly rows: ReadonlyArray<ReadonlyArray<AddressFormField>>;
+  readonly latinRows?: ReadonlyArray<ReadonlyArray<AddressFormField>>;
   readonly requiredFields: ReadonlyArray<AddressField>;
-  readonly uppercaseFields: ReadonlyArray<AddressField>;
   readonly postalCodePattern?: string;
+  readonly postalCodeExamples: ReadonlyArray<string>;
   readonly language?: string;
-  readonly languages?: ReadonlyArray<string>;
+  readonly languages: ReadonlyArray<string>;
   readonly labels: {
     readonly administrativeArea?: string;
     readonly postalCode?: string;

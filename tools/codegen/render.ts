@@ -3,8 +3,7 @@ import * as Schema from "effect/Schema";
 import { format } from "vite-plus/fmt";
 
 import type { AddressField } from "../../src/address.ts";
-import { fieldTokens } from "../../src/fields.ts";
-import { normalizeCountry } from "./normalize.ts";
+import { fieldTokens, normalizeCountry } from "./normalize.ts";
 import { formatOptions } from "./format-options.ts";
 import { MetadataError } from "./metadata.ts";
 import { header, notice } from "./notice.ts";
@@ -12,6 +11,17 @@ import type { loadSnapshot } from "./snapshot.ts";
 
 type Snapshot = Effect.Success<ReturnType<typeof loadSnapshot>>;
 const serialize = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
+const regionProperties = new Set<string>([
+  "id",
+  "name",
+  "lname",
+  "zip",
+  "sub_keys",
+  "sub_names",
+  "sub_lnames",
+  "sub_zips",
+  "sub_isoids",
+]);
 
 const schemaField = (
   field: AddressField,
@@ -19,18 +29,15 @@ const schemaField = (
   postalPattern: string | undefined,
   country: string,
 ) => {
-  let schema = "text";
+  const isRequired = required.includes(field);
+  let schema = isRequired ? "AddressText" : "Schema.optionalKey(AddressText)";
 
   if (field === "addressLines") {
-    schema = "addressLines";
+    schema = isRequired ? "AddressLines" : "Schema.optionalKey(AddressLines)";
   }
 
   if (field === "postalCode" && postalPattern !== undefined) {
-    schema = `postalCode(${country}.postalCodePattern)`;
-  }
-
-  if (!required.includes(field)) {
-    schema = `Schema.optionalKey(${schema})`;
+    schema = isRequired ? `postalCode(${country})` : `Schema.optionalKey(postalCode(${country}))`;
   }
 
   return `${field}: ${schema}`;
@@ -47,22 +54,21 @@ export const formatSource = Effect.fn(function* (file: string, content: string) 
   return result.code;
 });
 
-const renderCatalog = (codes: ReadonlyArray<string>) => {
-  // explicit import paths let bundlers load each country separately
-  const countries = codes.map(
+const renderFormCatalog = (codes: ReadonlyArray<string>) => {
+  // Explicit paths let bundlers create one deferred chunk for each country form.
+  const forms = codes.map(
     (code) => `
-    ${code}: () => import("./countries/${code}.ts")
-      .then((module) => module.${code})
+    ${code}: () => import("./forms/${code}.ts")
   `,
   );
 
-  const regions = codes.map(
-    (code) => `
-    ${code}: () => import("./regions/${code}.ts")
-      .then((module) => module.records)
-  `,
-  );
+  return `export const countryCodes = ${serialize(codes)} as const;
+export type CountryCode = typeof countryCodes[number];
+const formLoaders = { ${forms.join(",\n")} };
+export const loadAddressForm = (code: CountryCode) => formLoaders[code]();`;
+};
 
+const renderSchemaCatalog = (codes: ReadonlyArray<string>) => {
   const schemas = codes.map(
     (code) => `
     ${code}: () => import("./schemas/${code}.ts")
@@ -70,24 +76,27 @@ const renderCatalog = (codes: ReadonlyArray<string>) => {
   `,
   );
 
-  return `export const countryCodes = ${serialize(codes)} as const;
-export type CountryCode = typeof countryCodes[number];
-const countryLoaders = { ${countries.join(",\n")} };
-type RegionLoaders = {
-  [Code in CountryCode]: () => Promise<import("../address.ts").RegionData>;
-};
-const regionLoaders: RegionLoaders = { ${regions.join(",\n")} };
+  return `import type * as Schema from "effect/Schema";
+import type { Address } from "../address.ts";
+import type { CountryCode } from "./forms.ts";
+export type { AddressIssue } from "../validation.ts";
 const schemaLoaders = { ${schemas.join(",\n")} };
-export const loadCountry = (code: CountryCode) => countryLoaders[code]();
-export const loadRegions = (code: CountryCode) => regionLoaders[code]();
-export const loadSchema = (code: CountryCode) => schemaLoaders[code]();`;
+// RETURN TYPE: Keep the declaration independent of all 252 concrete schema types.
+export function loadAddressSchema(code: CountryCode): Promise<Schema.Codec<Address>> {
+  return schemaLoaders[code]();
+}`;
 };
 
 export const renderSnapshot = Effect.fn(function* (snapshot: Snapshot) {
+  const codes = snapshot.aggregates.map(({ country }) => country);
   const files = [
     {
-      path: "countries.ts",
-      content: renderCatalog(snapshot.aggregates.map(({ country }) => country)),
+      path: "forms.ts",
+      content: renderFormCatalog(codes),
+    },
+    {
+      path: "schemas.ts",
+      content: renderSchemaCatalog(codes),
     },
   ];
   const warnings = new Set<string>();
@@ -110,11 +119,32 @@ export const renderSnapshot = Effect.fn(function* (snapshot: Snapshot) {
     });
 
     const ordered = Object.fromEntries(
-      Object.entries(source.records).sort(([a], [b]) => (a < b ? -1 : 1)),
+      Object.entries(source.records)
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .flatMap(([id, record]) => {
+          const projected = Object.fromEntries(
+            Object.entries(record).filter(([property]) => regionProperties.has(property)),
+          );
+          return Object.keys(projected).length === 1 ? [] : [[id, projected]];
+        }),
     );
     files.push({
       path: `regions/${code}.ts`,
       content: `export const records = ${serialize(ordered)} as const;`,
+    });
+
+    files.push({
+      path: `forms/${code}.ts`,
+      content: `import type { AddressFormValues } from "../../address.ts";
+import { getAddressFormForCountry } from "../../form.ts";
+import type { AddressFormOptions } from "../../form.ts";
+import { ${code} } from "../countries/${code}.ts";
+import { records } from "../regions/${code}.ts";
+
+export const getAddressForm = (
+  values: AddressFormValues = {},
+  options: AddressFormOptions = {}
+) => getAddressFormForCountry(${code}, records, values, options);`,
     });
 
     const fields = fieldTokens
@@ -122,23 +152,26 @@ export const renderSnapshot = Effect.fn(function* (snapshot: Snapshot) {
       .map(([, field]) =>
         schemaField(field, metadata.requiredFields, metadata.postalCodePattern, code),
       );
-    const imports = ["text", "addressLines"];
-
-    if (metadata.postalCodePattern !== undefined) {
-      imports.push("postalCode");
-    }
+    const validationImports = [
+      "AddressLines",
+      "AddressText",
+      "addressChecks",
+      ...(metadata.postalCodePattern === undefined ? [] : ["postalCode"]),
+    ].sort();
 
     files.push({
       path: `schemas/${code}.ts`,
       content: `import * as Schema from "effect/Schema";
+import { ${validationImports.join(", ")} } from "../../validation.ts";
 import { ${code} } from "../countries/${code}.ts";
-import { ${imports.join(", ")} } from "../../schema-fields.ts";
+import { records } from "../regions/${code}.ts";
 
-export const validationCoverage = "country" as const;
 export const ${code}AddressSchema = Schema.Struct({
   countryCode: Schema.Literal(${code}.countryCode),
   ${fields.join(",\n")}
-});`,
+})
+  .check(addressChecks(${code}, records))
+  .annotate({ identifier: "${code}Address" });`,
     });
   }
 

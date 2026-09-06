@@ -10,7 +10,7 @@ import {
   readDefaults,
   selectCountries,
 } from "./metadata.ts";
-import { snapshotNotice } from "./notice.ts";
+import { notice } from "./notice.ts";
 
 const dataUrl = "https://chromium-i18n.appspot.com/ssl-address/data";
 const aggregateUrl = "https://chromium-i18n.appspot.com/ssl-aggregate-address/data";
@@ -61,7 +61,7 @@ export const fetchSnapshot = Effect.fn(function* (output: string, selection: str
     { concurrency: 4 },
   );
 
-  yield* fs.writeFileString(path.join(staging, "NOTICE"), `${snapshotNotice}\n`);
+  yield* fs.writeFileString(path.join(staging, "NOTICE"), `${notice}\n`);
 
   if (yield* fs.exists(destination)) {
     return yield* new MetadataError({

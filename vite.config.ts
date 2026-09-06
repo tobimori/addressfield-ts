@@ -13,7 +13,6 @@ const ignored = [
   "dist-tools/**",
   "playground/dist/**",
   "coverage/**",
-  "tools/oxlint/anti-slop/**",
 ];
 
 export default defineConfig({
@@ -22,9 +21,9 @@ export default defineConfig({
       name: "library",
       entry: [
         "src/index.ts",
-        "src/schemas.ts",
-        "src/generated/countries.ts",
-        "src/generated/{countries,schemas,regions}/*.ts",
+        "src/generated/forms.ts",
+        "src/generated/schemas.ts",
+        "src/generated/{countries,forms,schemas,regions}/*.ts",
       ],
       root: "src",
       outDir: "dist",
@@ -58,11 +57,11 @@ export default defineConfig({
     jsPlugins: [
       {
         name: "anti-slop",
-        specifier: "./tools/oxlint/anti-slop/index.ts",
+        specifier: "./tools/oxlint/index.ts",
       },
       {
         name: "anti-slop-effect",
-        specifier: "./tools/oxlint/anti-slop/effect/index.ts",
+        specifier: "./tools/oxlint/effect/index.ts",
       },
     ],
     options: {

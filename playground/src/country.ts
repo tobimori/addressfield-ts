@@ -1,24 +1,17 @@
 import * as Schema from "effect/Schema";
-import { loadCountry, loadRegions, loadSchema } from "addressfield-ts/countries";
-import type { CountryCode } from "addressfield-ts/countries";
-import { withRegions } from "addressfield-ts/schemas";
+import { loadAddressForm } from "addressfield-ts/forms";
+import type { CountryCode } from "addressfield-ts/forms";
+import { loadAddressSchema } from "addressfield-ts/schemas";
 
-async function loadCountryData(code: CountryCode) {
-  const [country, regions, addressSchema] = await Promise.all([
-    loadCountry(code),
-    loadRegions(code),
-    loadSchema(code),
-  ]);
-
-  return {
-    country,
-    regions,
-    decode: Schema.decodeUnknownSync(withRegions(addressSchema, { regions }), {
+const loadCountryData = (code: CountryCode) =>
+  Promise.all([loadAddressForm(code), loadAddressSchema(code)]).then(([form, addressSchema]) => ({
+    code,
+    getAddressForm: form.getAddressForm,
+    decode: Schema.decodeUnknownSync(addressSchema, {
       errors: "all",
       onExcessProperty: "error",
     }),
-  };
-}
+  }));
 
 export type CountryData = Awaited<ReturnType<typeof loadCountryData>>;
 

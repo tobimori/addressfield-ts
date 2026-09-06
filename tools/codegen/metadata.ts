@@ -81,7 +81,7 @@ export const selectCountries = Effect.fn(function* (
   supported: ReadonlyArray<string>,
 ) {
   const input = selection.trim().toUpperCase();
-  if (input === "ALL") return supported.toSorted();
+  if (input === "ALL") return supported;
 
   const countries = [...new Set(input.split(",").map((country) => country.trim()))].sort();
   const invalid = countries.filter((country) => !supported.includes(country));

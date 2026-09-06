@@ -1,161 +1,190 @@
 # addressfield-ts
 
-Address validation, Effect schemas, and form metadata for 252 countries and territories, generated from Google libaddressinput data.
+Country-specific address forms and Effect schemas for 252 countries and territories, generated from Google libaddressinput data.
 
-- Import only the countries you need, or load them on demand
-- Use the core library without Effect or a UI framework
-- Add Effect schemas and regional validation when needed
-- Build forms from country-specific field order, labels, required fields, and region choices
+- Combine backend validation with `Schema.Union`
+- Load each frontend country form separately
+- Keep country selection outside the address form
+- Use Google address-language variants for regional names
+- Customize field labels and validation messages
 
 [Try the playground](https://addressfield-playground.tobimori.workers.dev)
 
-## Install addressfield-ts
+## Install
 
 ```sh
-vp add addressfield-ts
+pnpm add addressfield-ts
 ```
 
-For schema support, also install the supported Effect release:
+Backend schema users must also install the supported Effect release:
 
 ```sh
-vp add effect@4.0.0-rc.112
+pnpm add effect@4.0.0-rc.112
 ```
 
-## Validate your first address
+Form entries do not import Effect.
 
-```ts
-import { createValidator } from "addressfield-ts";
-import { DE } from "addressfield-ts/countries/DE";
+## Validate addresses
 
-const validate = createValidator(DE);
-
-const result = validate({
-  countryCode: "DE",
-  addressLines: ["Invalidenstraße 116"],
-  postalCode: "10115",
-  locality: "Berlin",
-});
-
-console.log(result.valid);
-console.log(result.issues);
-```
-
-Each issue has a `field`, `code`, and `message`. Use `field` to connect the issue to an input. Use `code` to provide your own messages.
-
-`createValidator` accepts a typed `Address`. For unknown input, such as a request body, use an Effect schema.
-
-## Common tasks
-
-### Validate a request with Effect
+Import the countries that the backend accepts and combine them directly:
 
 ```ts
 import * as Schema from "effect/Schema";
+import { DEAddressSchema } from "addressfield-ts/schemas/DE";
 import { USAddressSchema } from "addressfield-ts/schemas/US";
-import { records } from "addressfield-ts/regions/US";
-import { withRegions } from "addressfield-ts/schemas";
 
-const RequestSchema = Schema.Struct({
-  address: withRegions(USAddressSchema, { regions: records }),
-  deliveryInstructions: Schema.optionalKey(Schema.String),
-});
+const AddressSchema = Schema.Union([DEAddressSchema, USAddressSchema]);
 
-const decodeRequest = Schema.decodeUnknownSync(RequestSchema, {
+const decodeAddress = Schema.decodeUnknownEffect(AddressSchema, {
   errors: "all",
   onExcessProperty: "error",
 });
 ```
 
-Pass the parsed request body to `decodeRequest`. It returns the decoded value or throws a schema error.
+Each country schema checks its literal `countryCode`, required fields, postal-code format, known regional values, and regional postal-code prefixes.
 
-Generated schemas check country-level requirements and postal-code patterns. `withRegions` adds the available regional checks. Keep custom application fields outside the address schema, as above, to preserve its checks.
-
-For core validation with region data, pass the same `regions` option to `createValidator`.
-
-### Build a form
+Country schemas are normal Effect schemas. Nest them in an application schema to add application fields:
 
 ```ts
-import { getAddressForm } from "addressfield-ts";
-import { US } from "addressfield-ts/countries/US";
-import { records } from "addressfield-ts/regions/US";
+const DeliveryRequest = Schema.Struct({
+  address: AddressSchema,
+  deliveryInstructions: Schema.optionalKey(Schema.String),
+});
+```
 
-const form = getAddressForm(US, {
-  regions: records,
-  values: {
-    countryCode: "US",
-    administrativeArea: "CA",
-  },
-  labels: {
-    recipient: "Recipient name",
-  },
+## Customize validation messages
+
+Country modules export one immutable schema. They do not create locale-specific schema instances.
+
+Validation failures retain Effect's `SchemaIssue` tree. Address checks attach an `addressIssue` annotation with a `Schema.TaggedError` value, such as `InvalidPostalCode` or `UnknownRegion`. Applications can map these annotations with `SchemaIssue.makeFormatterStandardSchemaV1` hooks.
+
+The library does not supply user-facing error text.
+
+## Build a country form
+
+The application owns the country selector. Load the selected country's form separately:
+
+```ts
+import { getAddressForm } from "addressfield-ts/forms/DE";
+
+const form = getAddressForm({
+  locality: "Berlin",
+  postalCode: "10115",
 });
 ```
 
 `form.fields` contains:
 
-- `name`, `label`, and `required`
-- `control`: `hidden`, `text`, `lines`, or `select`
-- `autocomplete`: the HTML autocomplete token
-- `options`: region choices with `value` and `label`
-- `value`: the current field value
+- `name`, semantic `labelType`, and `required`
+- `control`: `text`, `lines`, or `select`
+- `autocomplete`
+- regional `options`
+- the current `value`
+- `dependsOn` for regional parent fields
 
-`form.rows` groups field names according to the country's address format. Layout details, such as input widths, remain your choice. `lines` represents an array of address lines, not a fixed number of inputs.
+`form.rows` contains the country-specific field order. It never contains `countryCode`.
 
-Call `getAddressForm` with the updated values when a parent region changes. You can also use `getRegionOptions` to read choices for one region field.
-
-The library does not render controls. Connect labels to inputs, mark required fields, associate errors with `aria-describedby`, and focus the first invalid field on submission.
-
-See [`playground/src`](./playground/src) for a React example using shadcn Base UI components.
-
-### Load countries on demand
+Add the selected country when the form is submitted:
 
 ```ts
-import { countryCodes, loadCountry, loadRegions, loadSchema } from "addressfield-ts/countries";
-
-const country = await loadCountry("DE");
+const input = {
+  countryCode: selectedCountry,
+  ...formValues,
+};
 ```
 
-`countryCodes` lists all supported codes. `loadCountry`, `loadRegions`, and `loadSchema` use separate dynamic imports. They load packaged modules, not data from Google.
+## Load forms on demand
 
-Direct country imports avoid including the complete country loader catalog in your application.
+The form catalog uses explicit dynamic imports:
+
+```ts
+import { countryCodes, loadAddressForm } from "addressfield-ts/forms";
+
+const { getAddressForm } = await loadAddressForm("CA");
+const form = getAddressForm(values);
+```
+
+This loads one country form module. It does not eagerly load all country forms.
+
+A dynamic schema catalog is also available for applications that select backend rules at runtime:
+
+```ts
+import { loadAddressSchema } from "addressfield-ts/schemas";
+
+const addressSchema = await loadAddressSchema("CA");
+```
+
+For a fixed backend country set, use direct schema imports and `Schema.Union` instead.
+
+Applications can also define a smaller explicit form loader table:
+
+```ts
+const formLoaders = {
+  DE: () => import("addressfield-ts/forms/DE"),
+  US: () => import("addressfield-ts/forms/US"),
+} as const;
+```
+
+## Address language
+
+Address language controls Google regional names and native or Latin field order. It does not control application UI text.
+
+```ts
+import { getAddressForm } from "addressfield-ts/forms/CA";
+
+const form = getAddressForm(values, {
+  addressLanguage: "fr-CA",
+});
+```
+
+For Canada, this produces labels such as `Québec`. Region option values remain stable keys such as `QC`.
+
+## Field labels
+
+The library returns semantic label data, not user-facing UI text:
+
+```ts
+const form = getAddressForm(values);
+const postalField = form.fields.find((field) => field.name === "postalCode");
+
+postalField?.name; // "postalCode"
+postalField?.labelType; // "postal"
+```
+
+The application maps `name` and `labelType` to its own copy. It can use i18next, Lingui, FormatJS, or another localization system. This keeps all UI language and product wording outside the library.
+
+## Address lines
+
+`addressLines` is an array. Google metadata does not define one fixed number of street-address controls. A UI can use a multiline control or several inputs.
 
 ## Limits
 
-- Validation does not confirm address existence or mail delivery
-- Regional checks depend on the data available for that country
-- Country layouts are postal formats, not a complete list of administrative divisions
-- Default field labels are English; use `labels` to override them
-- Address values are not automatically trimmed, uppercased, or otherwise changed
-- Effect schema support uses an Effect v4 release candidate
+- Validation does not confirm address existence or mail delivery.
+- Regional checks cover only regions present in Google metadata.
+- Address values are not trimmed, uppercased, or translated after validation.
+- Google's uppercase metadata is formatting guidance, not a validation rule.
+- Country names and the country selector belong to the application.
 
 ## Development
 
 ```sh
-vp install
-vp run build
-vp run dev
+pnpm install
+pnpm run codegen generate
+pnpm run check
+pnpm run test
+pnpm run build
 ```
 
-The root package contains the library and codegen CLI. `playground/` is a private workspace package that imports the library.
+Raw Google responses live in `metadata/google/`. Generated modules live in `src/generated/`. Both are committed.
 
-Raw Google responses live in `metadata/google/`. Generated modules live in `src/generated/`. Both are committed; build output is not.
-
-Regenerate from the committed data:
+Check generated output without changing files:
 
 ```sh
-vp run codegen generate
+pnpm run codegen generate --check
 ```
-
-Download a fresh copy without overwriting the committed data:
-
-```sh
-vp run codegen fetch --out .cache/google
-vp run codegen generate --input .cache/google
-```
-
-Use `vp run changeset` to describe a release change. CI creates a release PR and publishes through npm trusted publishing after that PR is merged.
 
 ## License
 
 addressfield-ts is available under the [MIT License](LICENSE).
 
-Google libaddressinput metadata is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribution and modification notices are included in the generated files and the packaged `NOTICE`.
+Google libaddressinput metadata is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribution and modification notices are included in generated files and the packaged `NOTICE`.

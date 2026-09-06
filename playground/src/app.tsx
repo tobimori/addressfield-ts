@@ -1,6 +1,6 @@
 import { Suspense, useId, useState } from "react";
-import { countryCodes } from "addressfield-ts/countries";
-import type { CountryCode } from "addressfield-ts/countries";
+import { countryCodes } from "addressfield-ts/forms";
+import type { CountryCode } from "addressfield-ts/forms";
 import { AddressForm } from "./address-form";
 import { getCountry } from "./country";
 import { CountryErrorBoundary } from "./country-error-boundary";

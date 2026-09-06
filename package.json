@@ -19,25 +19,21 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./countries": {
-      "types": "./dist/generated/countries.d.ts",
-      "import": "./dist/generated/countries.js"
+    "./forms": {
+      "types": "./dist/generated/forms.d.ts",
+      "import": "./dist/generated/forms.js"
     },
-    "./countries/*": {
-      "types": "./dist/generated/countries/*.d.ts",
-      "import": "./dist/generated/countries/*.js"
+    "./forms/*": {
+      "types": "./dist/generated/forms/*.d.ts",
+      "import": "./dist/generated/forms/*.js"
     },
     "./schemas": {
-      "types": "./dist/schemas.d.ts",
-      "import": "./dist/schemas.js"
+      "types": "./dist/generated/schemas.d.ts",
+      "import": "./dist/generated/schemas.js"
     },
     "./schemas/*": {
       "types": "./dist/generated/schemas/*.d.ts",
       "import": "./dist/generated/schemas/*.js"
-    },
-    "./regions/*": {
-      "types": "./dist/generated/regions/*.d.ts",
-      "import": "./dist/generated/regions/*.js"
     }
   },
   "publishConfig": {

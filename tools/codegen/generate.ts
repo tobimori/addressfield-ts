@@ -15,7 +15,7 @@ const ownership = Schema.fromJsonString(
     files: Schema.Array(
       Schema.String.check(
         Schema.isPattern(
-          /^(?:(?:countries|postal)\.ts|NOTICE|(?:countries|schemas|regions)\/[A-Z]{2}\.ts|schemas\/fields\.ts)$/u,
+          /^(?:(?:countries|forms|schemas)\.ts|NOTICE|(?:countries|forms|schemas|regions)\/[A-Z]{2}\.ts)$/u,
         ),
       ),
     ),
@@ -67,7 +67,7 @@ export const generate = Effect.fn(function* (input: string, output: string, chec
     if ((yield* fs.stat(root)).type !== "Directory") {
       return yield* new MetadataError({ message: `Output is not a directory: ${destination}.` });
     }
-    for (const directory of ["countries", "regions", "schemas"]) {
+    for (const directory of ["countries", "forms", "regions", "schemas"]) {
       const location = path.join(destination, directory);
 
       if (!(yield* fs.exists(location))) {
@@ -125,34 +125,18 @@ export const generate = Effect.fn(function* (input: string, output: string, chec
   }
 
   if (!check && hasChanges) {
-    const parent = path.dirname(destination);
-    yield* fs.makeDirectory(parent, { recursive: true });
-    const staging = yield* fs.makeTempDirectoryScoped({
-      directory: parent,
-      prefix: ".addressfield-",
-    });
-    for (const file of changes) {
-      const target = path.join(staging, file.path);
+    yield* fs.makeDirectory(destination, { recursive: true });
+    for (const file of changes.filter((file) => file.path !== ownershipFile)) {
+      const target = path.join(destination, file.path);
       yield* fs.makeDirectory(path.dirname(target), { recursive: true });
       yield* fs.writeFileString(target, file.content);
     }
-
-    for (const file of changes) {
-      if (file.path === ownershipFile) {
-        continue;
-      }
-
-      const target = path.join(destination, file.path);
-      yield* fs.makeDirectory(path.dirname(target), { recursive: true });
-      yield* fs.rename(path.join(staging, file.path), target);
-    }
-
     for (const file of stale) {
       yield* fs.remove(path.join(destination, file), { force: true });
     }
-    // publish ownership last so an interrupted update can be completed on the next run
-    if (changes.some((file) => file.path === ownershipFile)) {
-      yield* fs.rename(path.join(staging, ownershipFile), manifestPath);
+    const nextOwnership = changes.find((file) => file.path === ownershipFile);
+    if (nextOwnership !== undefined) {
+      yield* fs.writeFileString(manifestPath, nextOwnership.content);
     }
   }
   return {
@@ -161,4 +145,4 @@ export const generate = Effect.fn(function* (input: string, output: string, chec
     files: rendered.files.length,
     warnings: rendered.warnings,
   };
-}, Effect.scoped);
+});

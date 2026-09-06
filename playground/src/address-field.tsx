@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { FormField } from "addressfield-ts";
+import type { AddressFormField, FormField } from "addressfield-ts";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -8,6 +8,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const labels = {
+  recipient: "Full name",
+  organization: "Company",
+  addressLines: "Street address",
+  dependentLocality: "Neighborhood",
+  locality: "City",
+  administrativeArea: "State / province",
+  postalCode: "Postal code",
+  sortingCode: "Sorting code",
+} satisfies Record<AddressFormField, string>;
 
 interface AddressFieldProps {
   field: FormField;
@@ -20,11 +31,12 @@ export function AddressField({ field, value, error, onChange }: AddressFieldProp
   const inputId = useId();
   const errorId = useId();
   const describedBy = error ? errorId : undefined;
+  const label = labels[field.name];
 
   return (
     <div className="min-w-0 space-y-2">
       <label htmlFor={inputId} className="block text-sm font-medium">
-        {field.label}
+        {label}
         {field.required && " *"}
       </label>
 
@@ -42,7 +54,7 @@ export function AddressField({ field, value, error, onChange }: AddressFieldProp
             aria-invalid={Boolean(error)}
             aria-describedby={describedBy}
           >
-            <SelectValue placeholder={`Choose ${field.label.toLowerCase()}`} />
+            <SelectValue placeholder={`Choose ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false} className="max-h-72">
             {field.options.map((option) => (

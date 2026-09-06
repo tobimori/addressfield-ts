@@ -1,6 +1,5 @@
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
-import * as Stream from "effect/Stream";
 import { HttpClient } from "effect/unstable/http";
 
 import { MetadataError } from "./metadata.ts";
@@ -15,27 +14,11 @@ export const download = Effect.fn(
       HttpClient.retryTransient({ times: 2, schedule: Schedule.exponential("250 millis") }),
     );
     const response = yield* client.get(url);
-    let size = 0;
-    const chunks = yield* response.stream.pipe(
-      Stream.runFoldEffect(
-        () => Array<Uint8Array>(),
-        (chunks, chunk) => {
-          size += chunk.byteLength;
-          if (size > maxBytes) {
-            return Effect.fail(
-              new MetadataError({ message: `Response exceeds the ${maxBytes}-byte limit.` }),
-            );
-          }
-          chunks.push(chunk);
-          return Effect.succeed(chunks);
-        },
-      ),
-    );
-    const bytes = new Uint8Array(size);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.byteLength;
+    const bytes = new Uint8Array(yield* response.arrayBuffer);
+    if (bytes.byteLength > maxBytes) {
+      return yield* new MetadataError({
+        message: `Response exceeds the ${maxBytes}-byte limit.`,
+      });
     }
     const text = yield* Effect.try({
       try: () => new TextDecoder("utf-8", { fatal: true }).decode(bytes),
