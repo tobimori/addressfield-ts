@@ -183,6 +183,17 @@ Check generated output without changing files:
 pnpm run codegen generate --check
 ```
 
+### Playground deployment
+
+CI deploys the playground with Wrangler after package checks pass on each push to `main`. Pull requests do not deploy. Wrangler builds the library and playground before upload.
+
+Set these GitHub repository secrets:
+
+- `CLOUDFLARE_API_TOKEN`: a Cloudflare API token with Workers Scripts edit permission for the target account.
+- `CLOUDFLARE_ACCOUNT_ID`: the target Cloudflare account ID.
+
+The Worker name and asset settings are in `playground/wrangler.jsonc`.
+
 ## License
 
 addressfield-ts is available under the [MIT License](LICENSE).
