@@ -72,13 +72,14 @@ export const getAddressFormForCountry = (
     let control: FormField["control"] = "text";
     if (field === "addressLines") control = "lines";
     if (level !== undefined && level.choices.length > 0) control = "select";
+    const dependency = dependencies[field];
     return {
       name: field,
       labelType: labelKind(field, country),
       required: country.requiredFields.includes(field),
       control,
       autocomplete: autocomplete[field],
-      dependsOn: dependencies[field],
+      dependsOn: dependency !== undefined && ordered.includes(dependency) ? dependency : undefined,
       options: level?.choices.map(({ value, label }) => ({ value, label })) ?? [],
       value: values[field],
     } satisfies FormField;

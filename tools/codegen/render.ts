@@ -79,6 +79,7 @@ const renderSchemaCatalog = (codes: ReadonlyArray<string>) => {
   return `import type * as Schema from "effect/Schema";
 import type { Address } from "../address.ts";
 import type { CountryCode } from "./forms.ts";
+export { AddressIssueSchema } from "../validation.ts";
 export type { AddressIssue } from "../validation.ts";
 const schemaLoaders = { ${schemas.join(",\n")} };
 // RETURN TYPE: Keep the declaration independent of all 252 concrete schema types.

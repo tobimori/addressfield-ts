@@ -10,6 +10,7 @@
 import type * as Schema from "effect/Schema";
 import type { Address } from "../address.ts";
 import type { CountryCode } from "./forms.ts";
+export { AddressIssueSchema } from "../validation.ts";
 export type { AddressIssue } from "../validation.ts";
 const schemaLoaders = {
   AC: () => import("./schemas/AC.ts").then((module) => module.ACAddressSchema),

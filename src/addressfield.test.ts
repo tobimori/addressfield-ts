@@ -43,6 +43,7 @@ describe("country forms and schemas", () => {
       ["addressLines"],
       ["postalCode", "locality"],
     ]);
+    expect(form.fields.find((field) => field.name === "locality")?.dependsOn).toBeUndefined();
   });
 
   it("returns semantic label data without application copy", () => {

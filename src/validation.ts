@@ -26,7 +26,12 @@ class PostalCodeRegionMismatch extends Schema.TaggedError<PostalCodeRegionMismat
   },
 ) {}
 
-export type AddressIssue = InvalidPostalCode | UnknownRegion | PostalCodeRegionMismatch;
+export const AddressIssueSchema = Schema.Union([
+  InvalidPostalCode,
+  UnknownRegion,
+  PostalCodeRegionMismatch,
+]);
+export type AddressIssue = typeof AddressIssueSchema.Type;
 
 export const AddressText = Schema.String.check(Schema.isPattern(/\S/u));
 export const AddressLines = Schema.NonEmptyArray(AddressText);

@@ -7,7 +7,7 @@ const loadCountryData = (code: CountryCode) =>
   Promise.all([loadAddressForm(code), loadAddressSchema(code)]).then(([form, addressSchema]) => ({
     code,
     getAddressForm: form.getAddressForm,
-    decode: Schema.decodeUnknownSync(addressSchema, {
+    decode: Schema.decodeUnknownResult(addressSchema, {
       errors: "all",
       onExcessProperty: "error",
     }),
