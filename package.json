@@ -1,7 +1,9 @@
 {
   "name": "addressfield-ts",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Generated postal address metadata and Effect schemas.",
+  "license": "MIT",
+  "author": "Tobias Möritz",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tobimori/addressfield-ts.git"
@@ -63,7 +65,7 @@
     "@effect/tsgo": "0.41.0",
     "@effect/vitest": "4.0.0-rc.112",
     "@oxlint/plugins": "1.79.0",
-    "@types/node": "24.13.3",
+    "@types/node": "26.4.1",
     "effect": "4.0.0-rc.112",
     "oxlint": "1.79.0",
     "oxlint-tsgolint": "7.0.2001",

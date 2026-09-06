@@ -45,7 +45,7 @@ export default defineConfig({
       entry: { addressfield: "tools/codegen/main.ts" },
       outDir: "dist-tools",
       platform: "node",
-      target: "node24",
+      target: "node26",
       format: "esm",
       dts: false,
       sourcemap: true,
