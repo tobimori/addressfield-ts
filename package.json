@@ -1,8 +1,11 @@
 {
   "name": "addressfield-ts",
   "version": "0.0.0",
-  "private": true,
   "description": "Generated postal address metadata and Effect schemas.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tobimori/addressfield-ts.git"
+  },
   "files": [
     "dist"
   ],
@@ -35,8 +38,15 @@
       "import": "./dist/generated/regions/*.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "vp pack",
+    "changeset": "vp exec changeset",
+    "version-packages": "vp exec changeset version",
+    "release": "vp run build && vp exec changeset publish",
     "check": "vp check",
     "codegen": "node tools/codegen/main.ts",
     "format": "vp fmt",
@@ -48,6 +58,7 @@
     "dev": "vp pack --filter library && pnpm --filter @addressfield/playground dev"
   },
   "devDependencies": {
+    "@changesets/cli": "3.0.1",
     "@effect/platform-node": "4.0.0-rc.112",
     "@effect/tsgo": "0.41.0",
     "@effect/vitest": "4.0.0-rc.112",
