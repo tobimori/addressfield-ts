@@ -10,7 +10,7 @@ Address form metadata and [Effect](https://effect.website) validation schemas fo
 pnpm add addressfield-ts
 ```
 
-For validation, also install `effect@4.0.0-rc.112`. Forms do not require Effect.
+For validation, also install `effect@^4.0.0`. Forms do not require Effect.
 
 ## Build a form
 

@@ -1,16 +1,16 @@
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
-import { CliError, Command, Flag } from "effect/unstable/cli";
+import { CliError, Command, Flag } from "effect/cli";
 
 import { fetchSnapshot } from "./fetch.ts";
 import { generate } from "./generate.ts";
 
-const output = Flag.string("out").pipe(Flag.withAlias("o"));
+const output = Flag.String("out").pipe(Flag.withAlias("o"));
 
 const fetchCommand = Command.make(
   "fetch",
   {
-    countries: Flag.string("countries").pipe(
+    countries: Flag.String("countries").pipe(
       Flag.withDescription("Country codes separated by commas, or all"),
       Flag.withDefault("all"),
     ),
@@ -31,7 +31,7 @@ const fetchCommand = Command.make(
 const generateCommand = Command.make(
   "generate",
   {
-    input: Flag.string("input").pipe(
+    input: Flag.String("input").pipe(
       Flag.withAlias("i"),
       Flag.withDescription("Local metadata snapshot"),
       Flag.withDefault("metadata/google"),
@@ -40,7 +40,7 @@ const generateCommand = Command.make(
       Flag.withDescription("Directory for generated library files"),
       Flag.withDefault("src/generated"),
     ),
-    check: Flag.boolean("check").pipe(
+    check: Flag.Boolean("check").pipe(
       Flag.withDescription("Check generated files without changing them"),
       Flag.withDefault(false),
     ),

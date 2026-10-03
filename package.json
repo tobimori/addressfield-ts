@@ -57,12 +57,12 @@
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",
-    "@effect/platform-node": "4.0.0-rc.112",
+    "@effect/platform-node": "4.0.0",
     "@effect/tsgo": "0.41.0",
-    "@effect/vitest": "4.0.0-rc.112",
+    "@effect/vitest": "4.0.0",
     "@oxlint/plugins": "1.79.0",
     "@types/node": "26.4.1",
-    "effect": "4.0.0-rc.112",
+    "effect": "4.0.0",
     "oxlint": "1.79.0",
     "oxlint-tsgolint": "7.0.2001",
     "typescript": "7.0.2",
@@ -71,7 +71,7 @@
     "vitest": "4.1.11"
   },
   "peerDependencies": {
-    "effect": "4.0.0-rc.112"
+    "effect": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "effect": {
